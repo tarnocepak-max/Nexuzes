@@ -26,8 +26,8 @@ export async function loadPublicConfig(): Promise<PublicConfigStatus> {
   }
   const serverCfg = (await res.json()) as PublicConfigStatus;
 
-  const finalUrl = (serverCfg.supabaseUrl || envUrl || '').trim().replace(/\/$/, '');
-  const finalAnon = (serverCfg.supabaseAnonKey || envAnon || '').trim();
+  const finalUrl = serverCfg.supabaseUrl || envUrl || '';
+const finalAnon = serverCfg.supabaseAnonKey || envAnon || '';
 
   cachedConfig = {
     configured: Boolean(finalUrl && finalAnon && serverCfg.configured),
