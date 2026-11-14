@@ -214,6 +214,69 @@ async function startServer() {
     });
   });
 
+  // TEMPORARY SUPABASE AUTH API KEY DIAGNOSTIC
+  app.get('/api/diagnostics/supabase-auth-key', async (_req, res) => {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      return res.status(503).json({
+        ok: false,
+        diagnosis: 'MISSING_CONFIGURATION',
+        message: 'Supabase URL atau API key belum tersedia di server.',
+      });
+    }
+
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL.replace(/\/$/, '')}/auth/v1/token?grant_type=password`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({
+            email: 'diagnostic-invalid@example.com',
+            password: 'InvalidDiagnosticPassword123!',
+          }),
+        },
+      );
+
+      const result = await response.json().catch(() => ({}));
+      const message = String(
+        result.msg ||
+        result.message ||
+        result.error_description ||
+        result.error ||
+        ''
+      );
+
+      const invalidKey =
+        response.status === 401 &&
+        /invalid api key|invalid API key/i.test(message);
+
+      return res.status(200).json({
+        ok: !invalidKey && response.status !== 0,
+        httpStatus: response.status,
+        diagnosis: invalidKey
+          ? 'API_KEY_REJECTED'
+          : response.status === 400
+            ? 'API_KEY_ACCEPTED_AUTH_REQUEST_REJECTED'
+            : response.ok
+              ? 'AUTH_REQUEST_ACCEPTED'
+              : 'AUTH_ENDPOINT_RESPONDED',
+        message: message || 'Supabase Auth memberikan respons.',
+        projectHost: new URL(SUPABASE_URL).hostname,
+        keyPrefix: SUPABASE_ANON_KEY.slice(0, 15),
+        keyLength: SUPABASE_ANON_KEY.length,
+      });
+    } catch (error) {
+      return res.status(200).json({
+        ok: false,
+        diagnosis: 'NETWORK_OR_URL_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
   app.get('/api/bootstrap/status', async (_req, res) => {
     const missingEnv = getMissingEnv();
     if (!supabaseAdmin || missingEnv.length > 0) {
