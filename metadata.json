@@ -1,0 +1,6 @@
+{
+  "name": "NexusOps",
+  "description": "Contractor & Field Workforce Work Order Management System powered by Supabase PostgreSQL, Auth, Storage, and RLS.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
